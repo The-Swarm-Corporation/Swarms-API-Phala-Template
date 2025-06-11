@@ -33,5 +33,5 @@ USER appuser
 # Expose port 80 for the application
 EXPOSE 8080
 
-# Start Uvicorn with production settings directly, set to 10 workers, and add additional settings
-CMD ["uvicorn", "api:app", "--host=0.0.0.0", "--port=8080", "--workers=8", "--timeout-keep-alive=65", "--log-level=info", "--reload"]
+# Start Uvicorn with production settings, dynamically setting workers based on CPU cores
+CMD ["sh", "-c", "uvicorn api:app --host=0.0.0.0 --port=8080 --workers=$(nproc) --timeout-keep-alive=65 --log-level=info --reload"]
