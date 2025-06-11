@@ -83,9 +83,7 @@ RATE_LIMIT = 100  # Max requests
 TIME_WINDOW = 60  # Time window in seconds
 
 # In-memory store for tracking requests
-request_counts = defaultdict(
-    lambda: {"count": 0, "start_time": time()}
-)
+request_counts = defaultdict(lambda: {"count": 0, "start_time": time()})
 
 
 class AgentSpec(BaseModel):
@@ -146,11 +144,9 @@ class AgentCompletion(BaseModel):
     task: Optional[str] = Field(
         None, description="The task to be completed by the agent."
     )
-    history: Optional[Union[Dict[Any, Any], List[Dict[str, str]]]] = (
-        Field(
-            default=None,
-            description="The history of the agent's previous tasks and responses. Can be either a dictionary or a list of message objects.",
-        )
+    history: Optional[Union[Dict[Any, Any], List[Dict[str, str]]]] = Field(
+        default=None,
+        description="The history of the agent's previous tasks and responses. Can be either a dictionary or a list of message objects.",
     )
 
     model_config = {
@@ -213,9 +209,7 @@ class SwarmSpec(BaseModel):
         None,
         description="A list of tasks that the swarm should complete.",
     )
-    messages: Optional[
-        Union[List[Dict[Any, Any]], Dict[Any, Any]]
-    ] = Field(
+    messages: Optional[Union[List[Dict[Any, Any]], Dict[Any, Any]]] = Field(
         None,
         description="A list of messages that the swarm should complete.",
     )
@@ -382,9 +376,7 @@ def validate_swarm_spec(
         HTTPException: If validation fails
     """
     # Early validation
-    if not any(
-        [swarm_spec.task, swarm_spec.tasks, swarm_spec.messages]
-    ):
+    if not any([swarm_spec.task, swarm_spec.tasks, swarm_spec.messages]):
         raise HTTPException(
             status_code=400,
             detail="There is no task or tasks or messages provided. Please provide a valid task description to proceed.",
@@ -399,7 +391,9 @@ def validate_swarm_spec(
     elif swarm_spec.messages is not None:
         task = format_data_structure(swarm_spec.messages)
     elif swarm_spec.task and swarm_spec.messages is not None:
-        task = f"{format_data_structure(swarm_spec.messages)} \n\n User: {swarm_spec.task}"
+        task = (
+            f"{format_data_structure(swarm_spec.messages)} \n\n User: {swarm_spec.task}"
+        )
     elif swarm_spec.tasks is not None:
         tasks = swarm_spec.tasks
 
@@ -477,8 +471,7 @@ def create_single_agent(agent_spec: Union[AgentSpec, dict]) -> Agent:
             description=agent_spec.description,
             system_prompt=agent_spec.system_prompt,
             model_name=agent_spec.model_name or "gpt-4o-mini",
-            auto_generate_prompt=agent_spec.auto_generate_prompt
-            or False,
+            auto_generate_prompt=agent_spec.auto_generate_prompt or False,
             max_tokens=agent_spec.max_tokens or 8192,
             temperature=agent_spec.temperature or 0.5,
             role=agent_spec.role or "worker",
@@ -489,9 +482,7 @@ def create_single_agent(agent_spec: Union[AgentSpec, dict]) -> Agent:
             mcp_url=agent_spec.mcp_url,
         )
 
-        logger.info(
-            "Successfully created agent: {}", agent_spec.agent_name
-        )
+        logger.info("Successfully created agent: {}", agent_spec.agent_name)
         return agent
 
     except ValueError as ve:
@@ -530,9 +521,7 @@ def add_up_all_agent_inputs(agents: List[Agent]) -> int:
         >>> agents = [agent1, agent2, agent3]
         >>> total_tokens = add_up_all_agent_inputs(agents)
     """
-    return sum(
-        count_tokens(agent.short_memory.get_str()) for agent in agents
-    )
+    return sum(count_tokens(agent.short_memory.get_str()) for agent in agents)
 
 
 def create_swarm(swarm_spec: SwarmSpec, api_key: str):
@@ -563,9 +552,7 @@ def create_swarm(swarm_spec: SwarmSpec, api_key: str):
             ) as executor:
                 # Submit all agent creation tasks
                 future_to_agent = {
-                    executor.submit(
-                        create_single_agent, agent_spec
-                    ): agent_spec
+                    executor.submit(create_single_agent, agent_spec): agent_spec
                     for agent_spec in swarm_spec.agents
                 }
 
@@ -581,9 +568,7 @@ def create_swarm(swarm_spec: SwarmSpec, api_key: str):
                     except Exception as e:
                         logger.error(
                             "Error creating agent {}: {}",
-                            getattr(
-                                agent_spec, "agent_name", "unknown"
-                            ),
+                            getattr(agent_spec, "agent_name", "unknown"),
                             str(e),
                         )
                         raise HTTPException(
@@ -663,9 +648,7 @@ async def run_swarm_completion(
         agents = swarm.agents
 
         # Log start of swarm execution
-        logger.info(
-            f"Starting swarm {swarm_name} with {len(agents)} agents"
-        )
+        logger.info(f"Starting swarm {swarm_name} with {len(agents)} agents")
 
         # Create and run the swarm
         logger.debug(f"Creating swarm object for {swarm_name}")
@@ -681,16 +664,11 @@ async def run_swarm_completion(
                 execution_time = time() - start_time
                 break
             except HTTPException as e:
-                if (
-                    e.status_code == 429
-                    and swarm.service_tier == "flex"
-                ):
+                if e.status_code == 429 and swarm.service_tier == "flex":
                     # Resource unavailable error in flex mode
                     if attempt < max_retries - 1:
                         # Exponential backoff
-                        backoff_time = (
-                            2**attempt
-                        ) * 5  # 5, 10, 20 seconds
+                        backoff_time = (2**attempt) * 5  # 5, 10, 20 seconds
                         logger.info(
                             f"Resource unavailable, retrying in {backoff_time} seconds..."
                         )
@@ -773,9 +751,7 @@ def calculate_swarm_cost(
     agents: List[Any],
     input_text: str,
     execution_time: float,
-    agent_outputs: Union[
-        List[Dict[str, str]], str
-    ] = None,  # Update agent_outputs type
+    agent_outputs: Union[List[Dict[str, str]], str] = None,  # Update agent_outputs type
     service_tier: str = "standard",
 ) -> Dict[str, Any]:
     """
@@ -798,19 +774,13 @@ def calculate_swarm_cost(
     COST_PER_1M_OUTPUT_TOKENS = 4.50  # Cost per 1M output tokens
 
     # Flex processing discounts
-    FLEX_INPUT_DISCOUNT = (
-        0.25  # 75% discount for input tokens in flex mode
-    )
-    FLEX_OUTPUT_DISCOUNT = (
-        0.25  # 75% discount for output tokens in flex mode
-    )
+    FLEX_INPUT_DISCOUNT = 0.25  # 75% discount for input tokens in flex mode
+    FLEX_OUTPUT_DISCOUNT = 0.25  # 75% discount for output tokens in flex mode
 
     # Get current time in California timezone
     california_tz = pytz.timezone("America/Los_Angeles")
     current_time = datetime.now(california_tz)
-    is_night_time = (
-        current_time.hour >= 20 or current_time.hour < 6
-    )  # 8 PM to 6 AM
+    is_night_time = current_time.hour >= 20 or current_time.hour < 6  # 8 PM to 6 AM
 
     try:
         # Calculate input tokens for task
@@ -827,9 +797,7 @@ def calculate_swarm_cost(
 
             # Add system prompt tokens if present
             if agent.system_prompt:
-                agent_input_tokens += count_tokens(
-                    agent.system_prompt
-                )
+                agent_input_tokens += count_tokens(agent.system_prompt)
 
             # Add memory tokens if available
             try:
@@ -847,15 +815,12 @@ def calculate_swarm_cost(
                 if isinstance(agent_outputs, list):
                     # Sum tokens for each dictionary's content
                     agent_output_tokens = sum(
-                        count_tokens(message["content"])
-                        for message in agent_outputs
+                        count_tokens(message["content"]) for message in agent_outputs
                     )
                 elif isinstance(agent_outputs, str):
                     agent_output_tokens = count_tokens(agent_outputs)
                 elif isinstance(agent_outputs, dict):
-                    agent_output_tokens = count_tokens(
-                        any_to_str(agent_outputs)
-                    )
+                    agent_output_tokens = count_tokens(any_to_str(agent_outputs))
                 else:
                     agent_output_tokens = any_to_str(agent_outputs)
             else:
@@ -867,9 +832,7 @@ def calculate_swarm_cost(
             per_agent_tokens[agent.agent_name] = {
                 "input_tokens": agent_input_tokens,
                 "output_tokens": agent_output_tokens,
-                "total_tokens": (
-                    agent_input_tokens + agent_output_tokens
-                ),
+                "total_tokens": (agent_input_tokens + agent_output_tokens),
             }
 
             # Add to totals
@@ -879,14 +842,10 @@ def calculate_swarm_cost(
         # Calculate costs (convert to millions of tokens)
         agent_cost = len(agents) * COST_PER_AGENT
         input_token_cost = (
-            (total_input_tokens / 1_000_000)
-            * COST_PER_1M_INPUT_TOKENS
-            * len(agents)
+            (total_input_tokens / 1_000_000) * COST_PER_1M_INPUT_TOKENS * len(agents)
         )
         output_token_cost = (
-            (total_output_tokens / 1_000_000)
-            * COST_PER_1M_OUTPUT_TOKENS
-            * len(agents)
+            (total_output_tokens / 1_000_000) * COST_PER_1M_OUTPUT_TOKENS * len(agents)
         )
 
         # Apply flex processing discounts if applicable
@@ -910,9 +869,7 @@ def calculate_swarm_cost(
                 "token_counts": {
                     "total_input_tokens": total_input_tokens,
                     "total_output_tokens": total_output_tokens,
-                    "total_tokens": (
-                        total_input_tokens + total_output_tokens
-                    ),
+                    "total_tokens": (total_input_tokens + total_output_tokens),
                     "per_agent": per_agent_tokens,
                 },
                 "num_agents": len(agents),
@@ -934,9 +891,7 @@ def calculate_agent_cost(
     agent: Agent,
     input_text: str,
     execution_time: float,
-    agent_output: Union[
-        Dict[str, str], str, List[Dict[str, str]]
-    ] = None,
+    agent_output: Union[Dict[str, str], str, List[Dict[str, str]]] = None,
 ) -> Dict[str, Any]:
     """
     Calculate the cost for a single agent based on its input, output, and execution time.
@@ -958,9 +913,7 @@ def calculate_agent_cost(
     # Get current time in California timezone
     california_tz = pytz.timezone("America/Los_Angeles")
     current_time = datetime.now(california_tz)
-    is_night_time = (
-        current_time.hour >= 20 or current_time.hour < 6
-    )  # 8 PM to 6 AM
+    is_night_time = current_time.hour >= 20 or current_time.hour < 6  # 8 PM to 6 AM
 
     try:
         # Calculate input tokens
@@ -986,8 +939,7 @@ def calculate_agent_cost(
             if isinstance(agent_output, list):
                 # Sum tokens for each dictionary's content
                 output_tokens = sum(
-                    count_tokens(message["content"])
-                    for message in agent_output
+                    count_tokens(message["content"]) for message in agent_output
                 )
             elif isinstance(agent_output, str):
                 output_tokens = count_tokens(agent_output)
@@ -996,18 +948,12 @@ def calculate_agent_cost(
             else:
                 output_tokens = count_tokens(any_to_str(agent_output))
         else:
-            output_tokens = int(
-                input_tokens * 2.5
-            )  # Estimated output tokens
+            output_tokens = int(input_tokens * 2.5)  # Estimated output tokens
 
         # Calculate base costs (convert to millions of tokens)
         agent_base_cost = COST_PER_AGENT
-        input_token_cost = (
-            input_tokens / 1_000_000
-        ) * COST_PER_1M_INPUT_TOKENS
-        output_token_cost = (
-            output_tokens / 1_000_000
-        ) * COST_PER_1M_OUTPUT_TOKENS
+        input_token_cost = (input_tokens / 1_000_000) * COST_PER_1M_INPUT_TOKENS
+        output_token_cost = (output_tokens / 1_000_000) * COST_PER_1M_OUTPUT_TOKENS
 
         # Apply discount during California night time hours
         if is_night_time:
@@ -1015,9 +961,7 @@ def calculate_agent_cost(
             output_token_cost *= 0.25  # 75% discount
 
         # Calculate total cost
-        total_cost = (
-            agent_base_cost + input_token_cost + output_token_cost
-        )
+        total_cost = agent_base_cost + input_token_cost + output_token_cost
 
         return {
             "agent_name": agent.agent_name,
@@ -1120,9 +1064,7 @@ def agent_usage_calculations(
     )
 
     if agent_completion.agent_config.mcp_url is not None:
-        mcp_cost = calculate_mcp_cost(
-            agent_completion.agent_config.mcp_url
-        )
+        mcp_cost = calculate_mcp_cost(agent_completion.agent_config.mcp_url)
 
     usage_data = {
         "input_tokens": input_tokens,
@@ -1148,9 +1090,7 @@ async def _run_agent_completion(
 
         if agent_completion.history is not None:
             # Format the dictionary with keys and values on separate lines
-            history_prompt = format_dict_to_string(
-                agent_completion.history
-            )
+            history_prompt = format_dict_to_string(agent_completion.history)
         else:
             history_prompt = ""
 
@@ -1230,17 +1170,14 @@ async def batched_agent_completion(
 
     # Convert the list of AgentCompletion objects to a list of dictionaries
     agent_completions_logs = [
-        agent_completion.model_dump()
-        for agent_completion in agent_completions
+        agent_completion.model_dump() for agent_completion in agent_completions
     ]
 
     try:
         start_time = time()
         results = await asyncio.gather(
             *[
-                asyncio.create_task(
-                    _run_agent_completion(agent_completion, x_api_key)
-                )
+                asyncio.create_task(_run_agent_completion(agent_completion, x_api_key))
                 for agent_completion in agent_completions
             ]
         )
@@ -1295,9 +1232,7 @@ app = FastAPI(
 # Enable CORS (adjust origins as needed)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "*"
-    ],  # In production, restrict this to specific domains
+    allow_origins=["*"],  # In production, restrict this to specific domains
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1358,9 +1293,7 @@ async def telemetry_middleware(request: Request, call_next):
                 # Placeholder for the removed Supabase log_api_request
                 pass
             except Exception as e:
-                logger.error(
-                    f"Failed to log telemetry to database: {str(e)}"
-                )
+                logger.error(f"Failed to log telemetry to database: {str(e)}")
 
         return response
 
@@ -1383,9 +1316,7 @@ async def telemetry_middleware(request: Request, call_next):
                 # Placeholder for the removed Supabase log_api_request
                 pass
             except Exception as log_error:
-                logger.error(
-                    f"Failed to log error telemetry: {str(log_error)}"
-                )
+                logger.error(f"Failed to log error telemetry: {str(log_error)}")
 
         raise  # Re-raise the original exception
 
@@ -1424,9 +1355,7 @@ async def check_swarm_types(
         Depends(rate_limiter),
     ],
 )
-async def run_swarm(
-    swarm: SwarmSpec, x_api_key=Header(...)
-) -> Dict[str, Any]:
+async def run_swarm(swarm: SwarmSpec, x_api_key=Header(...)) -> Dict[str, Any]:
     """
     Run a swarm with the specified task.
     """
@@ -1454,9 +1383,7 @@ async def run_agent(
     Run an agent with the specified task.
     """
     try:
-        return await _run_agent_completion(
-            agent_completion, x_api_key
-        )
+        return await _run_agent_completion(agent_completion, x_api_key)
     except Exception as e:
         logger.error(f"Error running agent: {str(e)}")
         raise HTTPException(
@@ -1490,9 +1417,7 @@ async def run_agent_batch(
     """
     try:
         # Process the batch with optimized concurrency
-        return await batched_agent_completion(
-            agent_completions, x_api_key
-        )
+        return await batched_agent_completion(agent_completions, x_api_key)
     except Exception as e:
         logger.error(
             f"Error running agent batch: {str(e)} {traceback.format_exc()} Reconfigure your agent completion input schema "
@@ -1529,18 +1454,14 @@ def run_batch_completions(
                 "usage": usage_data,
             }
         except HTTPException as http_exc:
-            logger.error(
-                "HTTPException occurred: {}", http_exc.detail
-            )
+            logger.error("HTTPException occurred: {}", http_exc.detail)
             return {
                 "status": "error",
                 "swarm_name": swarm.name,
                 "detail": http_exc.detail,
             }
         except Exception as e:
-            logger.error(
-                "Error running swarm {}: {}", swarm.name, str(e)
-            )
+            logger.error("Error running swarm {}: {}", swarm.name, str(e))
             logger.exception(e)
             return {
                 "status": "error",
@@ -1549,13 +1470,10 @@ def run_batch_completions(
             }
 
     # Use ThreadPoolExecutor for concurrent execution
-    with ThreadPoolExecutor(
-        max_workers=min(len(swarms), 10)
-    ) as executor:
+    with ThreadPoolExecutor(max_workers=min(len(swarms), 10)) as executor:
         # Submit all swarms to the thread pool
         future_to_swarm = {
-            executor.submit(process_swarm, swarm): swarm
-            for swarm in swarms
+            executor.submit(process_swarm, swarm): swarm for swarm in swarms
         }
 
         # Collect results as they complete
