@@ -1,67 +1,129 @@
-[![Multi-Modality](agorabanner.png)](https://discord.com/servers/agora-999382051935506503)
+# Swarms API
 
-# Python Package Template
+Build, deploy, and orchestrate AI agents at scale with ease. Swarms API provides a comprehensive suite of endpoints for creating and managing multi-agent systems.
 
-[![Join our Discord](https://img.shields.io/badge/Discord-Join%20our%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/agora-999382051935506503) [![Subscribe on YouTube](https://img.shields.io/badge/YouTube-Subscribe-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@kyegomez3242) [![Connect on LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/kye-g-38759a207/) [![Follow on X.com](https://img.shields.io/badge/X.com-Follow-1DA1F2?style=for-the-badge&logo=x&logoColor=white)](https://x.com/kyegomezb)
+## Docker Setup
 
-A easy, reliable, fluid template for python packages complete with docs, testing suites, readme's, github workflows, linting and much much more
+To run the Swarms API using Docker, follow these steps:
 
+1. **Build the Docker Image**
+   
+   Navigate to the directory containing the `Dockerfile` and run the following command:
+   
+   ```bash
+   docker build -t swarms-api .
+   ```
 
-## Installation
+2. **Run the Docker Container**
 
-You can install the package using pip
+   Once the image is built, you can run the container with:
+
+   ```bash
+   docker run -p 8080:8080 swarms-api
+   ```
+
+   This will start the API server on port 8080.
+
+## Installing Requirements Locally
+
+If you prefer to run the API locally without Docker, you can install the required Python packages using:
 
 ```bash
-pip install -e .
+pip install -r api/requirements.txt
 ```
 
-# Usage
+## API Endpoints
+
+### Core Endpoints
+
+- **`GET /health`**: Check API health.
+- **`GET /v1/swarms/available`**: List available swarm types.
+
+### Swarm Operation Endpoints
+
+- **`POST /v1/swarm/completions`**: Run a single swarm task.
+- **`POST /v1/swarm/batch/completions`**: Run multiple swarm tasks.
+- **`GET /v1/swarm/logs`**: Retrieve API request logs.
+
+### Scheduling Endpoints
+
+- **`POST /v1/swarm/schedule`**: Schedule a swarm task.
+- **`GET /v1/swarm/schedule`**: List all scheduled jobs.
+- **`DELETE /v1/swarm/schedule/{job_id}`**: Cancel a scheduled job.
+
+
+## Example Usage
+
+Here's a basic example of running a swarm with multiple agents:
+
 ```python
-print("hello world")
+import os
+import requests
+from dotenv import load_dotenv
+import json
 
+load_dotenv()
+
+BASE_URL = "https://api.swarms.world"
+
+headers = {"Content-Type": "application/json"}
+
+def run_single_swarm():
+    payload = {
+        "name": "Financial Analysis Swarm",
+        "description": "Market analysis swarm",
+        "agents": [
+            {
+                "agent_name": "Market Analyst",
+                "description": "Analyzes market trends",
+                "system_prompt": "You are a financial analyst expert.",
+                "model_name": "gpt-4o",
+                "role": "worker",
+                "max_loops": 1,
+                "max_tokens": 8192,
+                "temperature": 0.5
+            },
+            {
+                "agent_name": "Economic Forecaster",
+                "description": "Predicts economic trends",
+                "system_prompt": "You are an expert in economic forecasting.",
+                "model_name": "gpt-4o",
+                "role": "worker",
+                "max_loops": 1,
+                "max_tokens": 8192,
+                "temperature": 0.7
+            },
+            {
+                "agent_name": "Data Scientist",
+                "description": "Performs data analysis",
+                "system_prompt": "You are a data science expert.",
+                "model_name": "gpt-4o",
+                "role": "worker",
+                "max_loops": 1,
+                "max_tokens": 8192,
+                "temperature": 0.3
+            },
+        ],
+        "max_loops": 1,
+        "swarm_type": "ConcurrentWorkflow",
+        "task": "What are the best ETFs and index funds for AI and tech?",
+        "return_history": True,
+    }
+
+    response = requests.post(
+        f"{BASE_URL}/v1/swarm/completions",
+        headers=headers,
+        json=payload,
+    )
+
+    return json.dumps(response.json(), indent=4)
+
+if __name__ == "__main__":
+    result = run_single_swarm()
+    print("Swarm Result:")
+    print(result)
 ```
 
+## Getting Support
 
-
-### Code Quality 🧹
-
-- `make style` to format the code
-- `make check_code_quality` to check code quality (PEP8 basically)
-- `black .`
-- `ruff . --fix`
-
-### Tests 🧪
-
-[`pytests`](https://docs.pytest.org/en/7.1.x/) is used to run our tests.
-
-### Publish on PyPi 🚀
-
-**Important**: Before publishing, edit `__version__` in [src/__init__](/src/__init__.py) to match the wanted new version.
-
-```
-poetry build
-poetry publish
-```
-
-### CI/CD 🤖
-
-We use [GitHub actions](https://github.com/features/actions) to automatically run tests and check code quality when a new PR is done on `main`.
-
-On any pull request, we will check the code quality and tests.
-
-When a new release is created, we will try to push the new code to PyPi. We use [`twine`](https://twine.readthedocs.io/en/stable/) to make our life easier. 
-
-The **correct steps** to create a new realease are the following:
-- edit `__version__` in [src/__init__](/src/__init__.py) to match the wanted new version.
-- create a new [`tag`](https://git-scm.com/docs/git-tag) with the release name, e.g. `git tag v0.0.1 && git push origin v0.0.1` or from the GitHub UI.
-- create a new release from GitHub UI
-
-The CI will run when you create the new release.
-
-# Docs
-We use MK docs. This repo comes with the zeta docs. All the docs configurations are already here along with the readthedocs configs.
-
-
-
-# License
-MIT
+For questions or support, check the [documentation](https://docs.swarms.world/en/latest/swarms_cloud/swarms_api/) or contact kye@swarms.world.

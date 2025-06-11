@@ -1,0 +1,13 @@
+swarms
+loguru
+pydantic
+fastapi
+uvicorn
+gunicorn
+python-dotenv
+loguru
+torch
+transformers
+pytz
+pydub
+litellm
