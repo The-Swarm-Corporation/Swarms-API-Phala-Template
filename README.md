@@ -64,7 +64,7 @@ import json
 
 load_dotenv()
 
-BASE_URL = "https://api.swarms.world"
+BASE_URL = "https://localhost:8080/
 
 headers = {"Content-Type": "application/json"}
 
